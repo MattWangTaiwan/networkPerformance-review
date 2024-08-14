@@ -36,7 +36,11 @@ To get started, clone the repository and install the dependencies:
 ```bash
 git clone https://github.com/MattWangTaiwan/networkPerformance-review.git
 cd networkPerformance-review
+# npm
 npm install
+
+# yarn
+yarn install
 ```
 
 ## Usage
@@ -44,7 +48,13 @@ npm install
 To start the development server:
 
 ```bash
+# npm
 npm run dev
+
+#yarn
+yarn dev
+
+http://localhost:5173
 ```
 
 ## Technologies
