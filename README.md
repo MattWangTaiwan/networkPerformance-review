@@ -45,6 +45,7 @@ To start the development server:
 
 ```bash
 npm run dev
+http://localhost:5173
 ```
 
 ## Technologies
