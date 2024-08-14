@@ -10,15 +10,16 @@ import { faHouse, faChartPie, faTable } from '@fortawesome/free-solid-svg-icons'
 
 import useDataStore from '@/stores/data'
 
-const dataStore = useDataStore();
-const { networkProfile, timeRange, currency } = storeToRefs(dataStore);
-const { setTimeRange, setCurrency } = dataStore;
+const dataStore = useDataStore()
+const { setTimeRange, setCurrency } = dataStore
+const { networkProfile, timeRange, currency } = storeToRefs(dataStore)
+
 
 const router = useRouter()
 const route = useRoute()
 
-const _selectedTime = ref('last14');
-const _selectedCurrency = ref('');
+const _selectedTime = ref('last14')
+const _selectedCurrency = ref('')
 
 const timeOption = ref<{ label: string; value: string }[]>([
   { label: 'Last 7 days', value: 'last7' },
@@ -26,67 +27,67 @@ const timeOption = ref<{ label: string; value: string }[]>([
   { label: 'Last 30 days', value: 'last30' },
   { label: 'Last 60 days', value: 'last60' },
   { label: 'Custom', value: 'custom' }
-]);
+])
 
 const currencyOption = ref<{ label: string; value: string }[]>([
   { label: 'TWD', value: 'TWD' }
-]);
+])
 
 const selectedTime = computed({
   get: () => _selectedTime.value,
   set: (value: string) => {
-    _selectedTime.value = value;
-    if (_selectedTime.value !== 'custom') setTimeRange(parseTime(_selectedTime.value));
+    _selectedTime.value = value
+    if (_selectedTime.value !== 'custom') setTimeRange(parseTime(_selectedTime.value))
   }
-});
+})
 
 const selectedCurrency = computed({
   get: () => _selectedCurrency.value,
   set: (value: string) => {
-    _selectedCurrency.value = value;
-    setCurrency(value);
+    _selectedCurrency.value = value
+    setCurrency(value)
   }
-});
+})
 
 const pickTime = computed({
   get: () => timeRange.value,
   set: (value: string[]) => {
-    setTimeRange(value);
+    setTimeRange(value)
   }
-});
+})
 
 watch(() => currency.value, (newVal, oldVal) => {
   if (oldVal === '') {
-    _selectedCurrency.value = currency.value;
+    _selectedCurrency.value = currency.value
     currencyOption.value = [
       { label: currency.value, value: currency.value },
       ...currencyOption.value
     ]
   }
-});
+})
 
 function parseTime(time: string = selectedTime.value) {
   switch (time) {
     case 'last7':
-      return [dayjs().subtract(7, 'day').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD')];
+      return [dayjs().subtract(7, 'day').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD')]
     case 'last14':
-      return [dayjs().subtract(14, 'day').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD')];
+      return [dayjs().subtract(14, 'day').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD')]
     case 'last30':
-      return [dayjs().subtract(30, 'day').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD')];
+      return [dayjs().subtract(30, 'day').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD')]
     case 'last60':
-      return [dayjs().subtract(60, 'day').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD')];
+      return [dayjs().subtract(60, 'day').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD')]
     default:
-      return [];
+      return []
   }
 }
 
 function onChange(path: string) {
-  router.push(path);
+  router.push(path)
 }
 
 onBeforeMount(() => {
-  setTimeRange(parseTime());
-});
+  setTimeRange(parseTime())
+})
 
 </script>
 

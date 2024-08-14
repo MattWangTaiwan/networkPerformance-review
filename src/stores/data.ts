@@ -15,6 +15,8 @@ export default defineStore('data', () => {
 
   const db = ref<Database | null>(null)
 
+  const loading = ref(false)
+
   const currencyRatio = computed(() => {
     return currencyMap.get(currency.value) || 1
   })
@@ -92,6 +94,14 @@ export default defineStore('data', () => {
     return result[0]?.values || []
   }
 
+  function showLoading() {
+    loading.value = true
+  }
+
+  function hideLoading() {
+    loading.value = false
+  }
+
   return {
     initialize,
 
@@ -105,6 +115,10 @@ export default defineStore('data', () => {
     currency,
     currencyRatio,
 
-    getStoreData
+    getStoreData,
+
+    loading,
+    showLoading,
+    hideLoading
   }
 })

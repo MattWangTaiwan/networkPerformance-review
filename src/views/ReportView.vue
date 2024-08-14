@@ -2,33 +2,33 @@
 import dayjs from 'dayjs'
 import ExcelJS from 'exceljs'
 import FileSaver from 'file-saver'
-import { onBeforeMount, ref, computed, onBeforeUnmount, watch } from 'vue';
-import { storeToRefs } from 'pinia';
-import { VxeTable, VxeColumn, VxeColgroup } from 'vxe-table';
+import { onBeforeMount, ref, computed, onBeforeUnmount, watch } from 'vue'
+import { storeToRefs } from 'pinia'
+import { VxeTable, VxeColumn, VxeColgroup } from 'vxe-table'
 import { useMachine } from '@xstate/vue'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faDownload } from '@fortawesome/free-solid-svg-icons'
 
-import { type UnitRecord } from '@/types';
+import { type UnitRecord } from '@/types'
 import stateMachine from '@/states/report'
-import useDataStore from '@/stores/data';
+import useDataStore from '@/stores/data'
 
-const { send, actorRef } = useMachine(stateMachine);
+const { send, actorRef } = useMachine(stateMachine)
 
-const dataStore = useDataStore();
-const { getStoreData } = dataStore;
-const { timeRange, currencyRatio } = storeToRefs(dataStore);
+const dataStore = useDataStore()
+const { getStoreData } = dataStore
+const { timeRange, currencyRatio } = storeToRefs(dataStore)
 
 const subscribe = ref<any>(null)
-const tableData = ref<UnitRecord[]>([]);
-const avgData = ref([]);
-const searchUnitId = ref<string>('');
+const tableData = ref<UnitRecord[]>([])
+const avgData = ref([])
+const searchUnitId = ref<string>('')
 
 const parseTableData = computed(() => {
   return tableData.value.map((record: any) => {
     const [date, unitId, impression, request, revenue, ecpm, rpm] = record
-    const avgItem = avgData.value.find((item: any) => item[0] === unitId);
+    const avgItem = avgData.value.find((item: any) => item[0] === unitId)
     return {
       date,
       unitId,
@@ -43,28 +43,28 @@ const parseTableData = computed(() => {
       rpm: rpm * currencyRatio.value,
       rpmDiff: avgItem ? getDiff(rpm, avgItem[5]) : 0
     }
-  });
-});
+  })
+})
 
 const filterTableData = computed(() => {
   return parseTableData.value.filter((record: any) => {
-    return searchUnitId.value === '' || record.unitId.includes(searchUnitId.value);
-  });
-});
+    return searchUnitId.value === '' || record.unitId.includes(searchUnitId.value)
+  })
+})
 
 const formatNumber = ({ cellValue }) => {
-  return cellValue.includes('-') ? `<span class="text-red-400">${cellValue}</span>` : `<span class="text-blue-400">${cellValue}</span>`;
+  return cellValue.includes('-') ? `<span class="text-red-400">${cellValue}</span>` : `<span class="text-blue-400">${cellValue}</span>`
 }
 
 function getDiff(target: number, base: number) {
-  return base === 0 ? '--' : `${((target - base) / base * 100).toFixed(1)}%`;
+  return base === 0 ? '--' : `${((target - base) / base * 100).toFixed(1)}%`
 }
 
 function onDownload() {
-  const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet('Unit Report');
+  const workbook = new ExcelJS.Workbook()
+  const worksheet = workbook.addWorksheet('Unit Report')
 
-  worksheet.getRow(1).values = ['Date', 'Unit ID', 'Impression', '%', 'Request', '%', 'Revenue', '%', 'eCPM', '%', 'RPM', '%'];
+  worksheet.getRow(1).values = ['Date', 'Unit ID', 'Impression', '%', 'Request', '%', 'Revenue', '%', 'eCPM', '%', 'RPM', '%']
   filterTableData.value.forEach((record, index) => {
     worksheet.addRow([
       record.date,
@@ -79,18 +79,18 @@ function onDownload() {
       record.ecpmDiff,
       record.rpm,
       record.rpmDiff
-    ]);
-  });
+    ])
+  })
 
   workbook.xlsx.writeBuffer().then((data) => {
-    const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    FileSaver.saveAs(blob, `unit-report-${dayjs().format('YYYY-MM-DD')}.xlsx`);
+    const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    FileSaver.saveAs(blob, `unit-report-${dayjs().format('YYYY-MM-DD')}.xlsx`)
   })
 }
 
 watch(() => timeRange.value, async () => {
-  send({ type: 'GET' });
-});
+  send({ type: 'GET' })
+})
 
 onBeforeMount(() => {
   subscribe.value = actorRef.subscribe(async (snapshot) => {
@@ -98,17 +98,17 @@ onBeforeMount(() => {
       case 'getData':
         avgData.value = await getStoreData(`SELECT unitId, AVG(impression), AVG(request), AVG(revenue), AVG(ecpm), AVG(rpm) FROM tbl_unit_reports WHERE date BETWEEN '${timeRange.value[0]}' AND '${timeRange.value[1]}' GROUP BY unitId`)
         tableData.value = await getStoreData(`SELECT date, unitId, impression, request, revenue, ecpm, rpm FROM tbl_unit_reports WHERE date BETWEEN '${timeRange.value[0]}' AND '${timeRange.value[1]}' ORDER BY unitId`)
-        send({ type: 'NEXT' });
-        break;
+        send({ type: 'NEXT' })
+        break
       case 'viewData':
-        break;
+        break
     }
-  });
-});
+  })
+})
 
 onBeforeUnmount(() => {
-  if (subscribe.value) subscribe.value.unsubscribe();
-});
+  if (subscribe.value) subscribe.value.unsubscribe()
+})
 </script>
 
 <template>
