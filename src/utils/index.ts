@@ -1,6 +1,6 @@
 import dayjs from 'dayjs'
 
-export const currencyMap = new Map<string, number>().set('TWD', 40)
+export const currencyMap = new Map<string, number>().set('TWD', 35.54)
 
 export function parseTimeRangeToList(range: string[]): string[] {
   const [start, end] = range
