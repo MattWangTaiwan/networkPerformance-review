@@ -2,7 +2,7 @@
 import dayjs from 'dayjs'
 import ExcelJS from 'exceljs'
 import FileSaver from 'file-saver'
-import { onBeforeMount, ref, computed, onBeforeUnmount, watch } from 'vue'
+import { onBeforeMount, ref, computed, onBeforeUnmount, watch, reactive } from 'vue'
 import { storeToRefs } from 'pinia'
 import { VxeTable, VxeColumn, VxeColgroup } from 'vxe-table'
 import { useMachine } from '@xstate/vue'
@@ -24,6 +24,25 @@ const subscribe = ref<any>(null)
 const tableData = ref<UnitRecord[]>([])
 const avgData = ref([])
 const searchUnitId = ref<string>('')
+
+const dataProcessor = reactive({
+  isMore: true,
+  limit: 500,
+  offset: 0,
+  getData: async function () {
+    tableData.value = []
+    const timer = setInterval(async () => {
+      if (!this.isMore) {
+        clearTimeout(timer)
+        return
+      }
+      const result = await getStoreData(`SELECT date, unitId, impression, request, revenue, ecpm, rpm FROM tbl_unit_reports WHERE date BETWEEN '${timeRange.value[0]}' AND '${timeRange.value[1]}' ORDER BY unitId LIMIT ${this.limit} OFFSET ${this.offset}`)
+      this.offset += this.limit
+      this.isMore = result.length === this.limit
+      tableData.value = tableData.value.concat(result)
+    }, 2000)
+  },
+})
 
 const parseTableData = computed(() => {
   return tableData.value.map((record: any) => {
@@ -97,7 +116,8 @@ onBeforeMount(() => {
     switch (snapshot.value) {
       case 'getData':
         avgData.value = await getStoreData(`SELECT unitId, AVG(impression), AVG(request), AVG(revenue), AVG(ecpm), AVG(rpm) FROM tbl_unit_reports WHERE date BETWEEN '${timeRange.value[0]}' AND '${timeRange.value[1]}' GROUP BY unitId`)
-        tableData.value = await getStoreData(`SELECT date, unitId, impression, request, revenue, ecpm, rpm FROM tbl_unit_reports WHERE date BETWEEN '${timeRange.value[0]}' AND '${timeRange.value[1]}' ORDER BY unitId`)
+        // tableData.value = await getStoreData(`SELECT date, unitId, impression, request, revenue, ecpm, rpm FROM tbl_unit_reports WHERE date BETWEEN '${timeRange.value[0]}' AND '${timeRange.value[1]}' ORDER BY unitId`)
+        dataProcessor.getData()
         send({ type: 'NEXT' })
         break
       case 'viewData':
@@ -113,13 +133,25 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="flex mb-2 items-center">
-    <div class="text-xl">Units <span class="text-sm">({{ filterTableData.length }})</span></div>
+    <div class="text-xl">Units 
+      <span class="text-sm">({{ filterTableData.length }})</span>
+    </div>
+    <svg aria-hidden="true" class="inline w-6 h-6 text-gray-200 animate-spin fill-blue-400 ml-4"
+      viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg" v-if="dataProcessor.isMore">
+      <path
+        d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+        fill="currentColor" />
+      <path
+        d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+        fill="currentFill" />
+    </svg>
     <input type="text" class="w-40 ml-auto mr-2" v-model="searchUnitId" placeholder="Search Unit ID">
     <div class="button" @click="onDownload">
       <font-awesome-icon :icon="faDownload" />
     </div>
   </div>
-  <vxe-table :data="filterTableData">
+  <div class="h-[calc(100%-4rem)]">
+    <vxe-table :data="filterTableData" :scroll-y="{enabled: true, gt: 0}" height="auto">
     <vxe-column field="unitId" title="Unit ID" sortable></vxe-column>
     <vxe-column field="date" title="Date Time" sortable></vxe-column>
     <vxe-colgroup title="Request" align="center">
@@ -143,4 +175,5 @@ onBeforeUnmount(() => {
       <vxe-column field="rpmDiff" type="html" :formatter="formatNumber"></vxe-column>
     </vxe-colgroup>
   </vxe-table>
+  </div>
 </template>
